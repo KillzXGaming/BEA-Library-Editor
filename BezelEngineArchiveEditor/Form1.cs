@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -70,16 +70,16 @@ namespace BezelEngineArchiveEditor
         {
             if (beaFile.FileList.ContainsKey(path))
             {
-                if (IsCompressed)
+                if (beaFile.FileList[path].UncompressedSize == beaFile.FileList[path].FileData.Length)
+                {
+                    return beaFile.FileList[path].FileData;
+                }
+                else
                 {
                     using (var decompressor = new Decompressor())
                     {
                         return decompressor.Unwrap(beaFile.FileList[path].FileData);
                     }
-                }
-                else
-                {
-                    return beaFile.FileList[path].FileData;
                 }
 
             }
@@ -93,9 +93,17 @@ namespace BezelEngineArchiveEditor
                 Console.WriteLine(path + " A match!");
 
                 asst.UncompressedSize = data.Length;
-                using (var compressor = new Compressor())
+
+                if (asst.UncompressedSize == data.Length)
                 {
-                    asst.FileData = compressor.Wrap(data);
+                    asst.FileData = data;
+                }
+                else
+                {
+                    using (var compressor = new Compressor())
+                    {
+                        asst.FileData = compressor.Wrap(data);
+                    }
                 }
             }
             return data;
@@ -131,12 +139,22 @@ namespace BezelEngineArchiveEditor
                         Console.WriteLine(f + " A match!");
 
                         asst.UncompressedSize = fdata[i].Length;
-                        progressBar.Task = "Compressing " + Path.GetFileName(f);
-                        progressBar.Refresh();
-                        using (var compressor = new Compressor())
+
+                        if (asst.UncompressedSize == fdata[i].Length)
                         {
-                            asst.FileData = compressor.Wrap(fdata[i]);
+                            progressBar.Task = "Packing " + Path.GetFileName(f);
+                            progressBar.Refresh();
+                            asst.FileData = fdata[i];
                         }
+                        else
+                        {
+                            progressBar.Task = "Compressing " + Path.GetFileName(f);
+                            progressBar.Refresh();
+                            using (var compressor = new Compressor())
+                            {
+                                asst.FileData = compressor.Wrap(fdata[i]);
+                            }
+                        }  
                     }
                 }
 
