@@ -1,4 +1,4 @@
-# Bezel-Engine-Archive-.bea-Library
+# Bezel-Engine-Archive .bea Library/Editor
 A libary aimed to rebuild, add, and remove files in a bezel engine archive file (.bea)
 
 ## Credits
