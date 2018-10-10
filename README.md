@@ -15,7 +15,7 @@ Tool
 - Be.HexEditor by Bernhard Elbl
 - [Treeview Icons by icons8](https://icons8.com/)
 
-##Usage
+## Usage
 - Open Bezel Engine Archive Editor and open a .bea file. From there you can extract the whole thing to a folder, extract and replace individual files, and repack the extracted folder, then File -> Save to save the .bea back. Atm this only replaces, however the lib can add/remove files so it'll be added in soon.
 
 
