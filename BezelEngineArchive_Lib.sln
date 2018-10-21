@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2047
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BezelEngineArchive_Lib", "BevelEngineArchive_Lib\BezelEngineArchive_Lib.csproj", "{B626758B-7CA1-474F-A97A-006B29C03C8F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BezelEngineArchive_Lib", "BezelEngineArchive_Lib\BezelEngineArchive_Lib.csproj", "{B626758B-7CA1-474F-A97A-006B29C03C8F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BezelEngineArchiveEditor", "BevelEngineArchiveEditor\BezelEngineArchiveEditor.csproj", "{7490181B-C7F2-4885-A3F4-36E71E7FD2F5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BezelEngineArchiveEditor", "BezelEngineArchiveEditor\BezelEngineArchiveEditor.csproj", "{7490181B-C7F2-4885-A3F4-36E71E7FD2F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
