@@ -4,7 +4,7 @@ using System.IO;
 
 namespace BezelEngineArchive_Lib
 {
-    public class ASST : IFileData //File asset?
+    public class ASST : IFileData //File asset
     {
         private const string _signature = "ASST";
 
@@ -13,7 +13,8 @@ namespace BezelEngineArchive_Lib
         public byte[] FileData;
         public string FileName;
         public long UncompressedSize;
-
+        public bool IsCompressed = true;
+        
         void IFileData.Load(FileLoader loader)
         {
             loader.CheckSignature(_signature);
@@ -24,6 +25,9 @@ namespace BezelEngineArchive_Lib
             UncompressedSize = loader.ReadInt64();
             FileData = loader.LoadCustom(() => loader.ReadBytes((int)FileSize));
             FileName = loader.LoadString();
+            
+            if (UncompressedSize == FileSize)
+                IsCompressed = false;
         }
         void IFileData.Save(FileSaver saver)
         {
