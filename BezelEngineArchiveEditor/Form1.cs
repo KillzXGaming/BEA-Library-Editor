@@ -70,16 +70,16 @@ namespace BezelEngineArchiveEditor
         {
             if (beaFile.FileList.ContainsKey(path))
             {
-                if (beaFile.FileList[path].UncompressedSize == beaFile.FileList[path].FileData.Length)
-                {
-                    return beaFile.FileList[path].FileData;
-                }
-                else
+                if (beaFile.FileList[path].IsCompressed)
                 {
                     using (var decompressor = new Decompressor())
                     {
                         return decompressor.Unwrap(beaFile.FileList[path].FileData);
                     }
+                }
+                else
+                {
+                    return beaFile.FileList[path].FileData;
                 }
 
             }
@@ -94,16 +94,16 @@ namespace BezelEngineArchiveEditor
 
                 asst.UncompressedSize = data.Length;
 
-                if (asst.UncompressedSize == data.Length)
+                if (asst.IsCompressed)
                 {
-                    asst.FileData = data;
-                }
-                else
-                {
-                    using (var compressor = new Compressor())
+                     using (var compressor = new Compressor())
                     {
                         asst.FileData = compressor.Wrap(data);
                     }
+                }
+                else
+                {
+                    asst.FileData = data;
                 }
             }
             return data;
