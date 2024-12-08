@@ -5,11 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Syroot.BinaryData;
-using Syroot.Maths;
 
 namespace BezelEngineArchive_Lib
 {
-    public class FileSaver : BinaryStream
+    public class FileSaver : BinaryDataWriter
     {
         private IDictionary<string, StringEntry> _savedStrings;
         private List<long> _savedBlockPositions;
@@ -18,24 +17,27 @@ namespace BezelEngineArchive_Lib
         private List<RelocationSection> _savedRelocatedSections;
         private List<ItemEntry> _savedItems;
 
-        internal BezelEngineArchive BezelEngineArchive;
+        internal BezelEngineArchive Archive;
         private long _ofsFileSize;
         private long _ofsRelocationTable;
         private long _ofsFirstBlock;
         private long _ofsAsstArray;
+        private long _ofsAsstRefArray;
         private long _ofsFileDictionary;
         private long _ofsEndOfBlock;
         private uint Section1Size;
         private uint beaSize; //Excludes data blocks
-
-        internal FileSaver(BezelEngineArchive bea, Stream stream, bool leaveOpen = false)
-            : base(stream, ByteConverter.Little, Encoding.ASCII, stringCoding: StringCoding.ZeroTerminated)
+        private long _ofsAsstStart;
+        
+        internal FileSaver(BezelEngineArchive bea, Stream stream, bool leaveOpen = true)
+            : base(stream, Encoding.ASCII, leaveOpen)
         {
-            BezelEngineArchive = bea;
+            ByteOrder = ByteOrder.LittleEndian;
+            Archive = bea;
         }
 
         internal FileSaver(BezelEngineArchive bea, string fileName)
-            : this(bea, new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Read), false)
+            : this(bea, new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Read), true)
         {
         }
 
@@ -47,35 +49,45 @@ namespace BezelEngineArchive_Lib
             _savedStrings = new Dictionary<string, StringEntry>();
             _savedRelocatedSections = new List<RelocationSection>();
 
-            ((IFileData)BezelEngineArchive).Save(this);
+            ((IFileData)Archive).Save(this);
+
+            //Ref list for version 5 and up
+            long RefOffset = Position; //Offset to blocks
+
+            if (Archive.ReferenceList != null)
+            {
+                SaveRelocateEntryToSection(Position, (uint)Archive.ReferenceList.Count, 1, 0, 1, "Ref String List ");
+                foreach (var asstRef in Archive.ReferenceList)
+                    SaveString(asstRef);
+            }
 
             //Set enough space to add offsets later
             long OffsetArrayASST = Position; //Offset to blocks
 
             List<long> _ofsAsstOffsets = new List<long>();
-            foreach (ASST asst in BezelEngineArchive.FileList.Values)
+            foreach (ASST asst in Archive.FileList.Values)
             {
-                SaveRelocateEntryToSection(Position, 1, 1, 0, 1, "Asst Offset "); //      <------------ Entry Set
+                SaveRelocateEntryToSection(Position, 1, 1, 0, 1, "Asst Offset "); 
                 _ofsAsstOffsets.Add(Position);
                 Write(0L);
             }
             //Now padding. 40 per file
-            Seek(40 * BezelEngineArchive.FileList.Count, SeekOrigin.Current);
+            Seek(40 * Archive.FileList.Count, SeekOrigin.Current);
 
             //Now save dictionary.
             long DictionaryOffset = Position; //Offset to blocks
-            ((IFileData)BezelEngineArchive.FileDictionary).Save(this);
+            ((IFileData)Archive.FileDictionary).Save(this);
 
             long BlockOffset = Position; //Offset to blocks
-            for (int i = 0; i < BezelEngineArchive.FileList.Count; i++)
+            for (int i = 0; i < Archive.FileList.Count; i++)
             {
                 long AsstOffset = Position;
                 using (this.TemporarySeek(_ofsAsstOffsets[i], SeekOrigin.Begin))
                 {
                     Write(AsstOffset);
                 }
-                string FileName = BezelEngineArchive.FileDictionary.GetKey(i);
-               ((IFileData)BezelEngineArchive.FileList[FileName]).Save(this);
+                string FileName = Archive.FileDictionary.GetKey(i);
+                ((IFileData)Archive.FileList[FileName]).Save(this);
             }
 
             WriteStringPool();
@@ -105,11 +117,23 @@ namespace BezelEngineArchive_Lib
             Position = _ofsAsstArray;
             Write((ulong)OffsetArrayASST);
 
+            if (_ofsAsstStart != 0)
+            {
+                Position = _ofsAsstStart;
+                Write((ulong)BlockOffset);
+            }
+
             Position = _ofsFirstBlock;
             Write((ushort)BlockOffset);
 
             Position = _ofsFileDictionary;
             Write((ulong)DictionaryOffset);
+
+            if (_ofsAsstRefArray != 0)
+            {
+                Position = _ofsAsstRefArray;
+                Write((ulong)RefOffset);
+            }
 
             Position = _ofsFileSize;
             Write(beaSize);
@@ -120,9 +144,22 @@ namespace BezelEngineArchive_Lib
             _ofsFirstBlock = Position;
             Write((ushort)0);
         }
+
+        internal void SaveAssetBlock()
+        {
+            _ofsAsstStart = Position;
+            Write((ulong)0);
+        }
         internal void SaveFileAsstPointer()
         {
             _ofsAsstArray = Position;
+            Write(0L);
+        }
+
+
+        internal void SaveAssetRefPointer()
+        {
+            _ofsAsstRefArray = Position;
             Write(0L);
         }
         internal void SaveFileDictionaryPointer()
@@ -147,24 +184,7 @@ namespace BezelEngineArchive_Lib
                 Write(value);
             }
         }
-        internal void Write(Vector4F value)
-        {
-            Write(value.X);
-            Write(value.Y);
-            Write(value.Z);
-            Write(value.W);
-        }
-        internal void Write(Vector3F value)
-        {
-            Write(value.X);
-            Write(value.Y);
-            Write(value.Z);
-        }
-        internal void Write(Vector2F value)
-        {
-            Write(value.X);
-            Write(value.Y);
-        }
+
         internal uint SaveSizePtr()
         {
             Write(0);
@@ -231,7 +251,7 @@ namespace BezelEngineArchive_Lib
         }
         private void SetupRelocationTable()
         {
-            this.Align(BezelEngineArchive.RawAlignment);
+            this.Align(Archive.RawAlignment);
             RelocationSection FileMainSect;
 
             long RelocationTableOffset = Position;
@@ -274,8 +294,8 @@ namespace BezelEngineArchive_Lib
                 {
                     Write(entry.Position);
                     Write((ushort)entry.StructCount);
-                    WriteByte((byte)entry.OffsetCount);
-                    WriteByte((byte)entry.PadingCount);
+                    Write((byte)entry.OffsetCount);
+                    Write((byte)entry.PadingCount);
                 }
             }
 
@@ -318,10 +338,8 @@ namespace BezelEngineArchive_Lib
                     SatisfyOffsets(entry.Value.Offsets, (uint)Position);
                 }
                 // Write the name.
-                Console.WriteLine(entry.Key.Length);
-                Console.WriteLine(entry.Key);
-                this.Write(entry.Key,StringCoding.Int16CharCount, encoding: entry.Value.Encoding ?? Encoding);
-                this.Align(2);
+                Write(entry.Key, BinaryStringFormat.WordLengthPrefix, entry.Value.Encoding ?? Encoding);
+                Align(2);
             }
             Section1Size = (uint)Position;
         }

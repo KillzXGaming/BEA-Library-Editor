@@ -1,14 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Authors>KillzXGaming, Syroot</Authors>
-    <TargetFrameworks>net46;netstandard2.0</TargetFrameworks>
-    <ApplicationIcon />
-    <OutputType>Library</OutputType>
-    <StartupObject />
-    <AssemblyName>BezelEngineArchive_Lib</AssemblyName>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Syroot.BinaryData" Version="5.0.0" />
-    <PackageReference Include="Syroot.Maths" Version="1.5.1" />
+    <Folder Include="External\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Syroot.BinaryData">
+      <HintPath>External\Syroot.BinaryData.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

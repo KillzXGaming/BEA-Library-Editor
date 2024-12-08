@@ -5,21 +5,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Syroot.BinaryData;
-using Syroot.Maths;
 
 namespace BezelEngineArchive_Lib
 {
     //Thanks to Syroot for the IO and methods
-    public class FileLoader : BinaryStream
+    public class FileLoader : BinaryDataReader
     {
         private IDictionary<uint, IFileData> _dataMap;
 
-        BezelEngineArchive BezelEngineArchive;
+        public BezelEngineArchive Archive;
 
-        public FileLoader(BezelEngineArchive bea, Stream stream, bool leaveOpen = false)
-            : base(stream, ByteConverter.Little, Encoding.ASCII, stringCoding: StringCoding.ZeroTerminated)
+        public FileLoader(BezelEngineArchive bea, Stream stream, bool leaveOpen = true)
+            : base(stream, Encoding.ASCII, leaveOpen)
         {
-            BezelEngineArchive = bea;
+            ByteOrder = ByteOrder.LittleEndian;
+            Archive = bea;
             _dataMap = new Dictionary<uint, IFileData>();
         }
 
@@ -51,18 +51,6 @@ namespace BezelEngineArchive_Lib
                 return this.ReadString(count, encoding: encoding);
             }
         }
-        internal Vector4F ReadVector4F()
-        {
-            return new Vector4F(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
-        }
-        internal Vector3F ReadVector3F()
-        {
-            return new Vector3F(ReadSingle(), ReadSingle(), ReadSingle());
-        }
-        internal Vector2F ReadVector2F()
-        {
-            return new Vector2F(ReadSingle(), ReadSingle());
-        }
         internal void LoadBlockHeader()
         {
             uint offset = ReadUInt32();
@@ -71,7 +59,8 @@ namespace BezelEngineArchive_Lib
 
         internal void Execute()
         {
-            ((IFileData)BezelEngineArchive).Load(this);
+            Seek(0, SeekOrigin.Begin);
+            ((IFileData)Archive).Load(this);
         }
 
         internal long ReadOffset()

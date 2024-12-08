@@ -9,7 +9,7 @@ using System.Diagnostics;
 namespace BezelEngineArchive_Lib
 {
     /// <summary>
-    /// Represents the non-generic base of a dictionary used to grab indexes
+    /// Represents the non-generic base of a dictionary which can quickly look up <see cref="IResData"/> instances via
     /// key or index.
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
@@ -128,13 +128,25 @@ namespace BezelEngineArchive_Lib
             saver.Write(Count);
 
             // Write nodes.
+            int index = -1; // Start at -1 due to root node.
+            int curNode = 0;
             foreach (Node node in _nodes)
             {
                 saver.Write(node.Reference);
                 saver.Write(node.IdxLeft);
                 saver.Write(node.IdxRight);
-                saver.SaveRelocateEntryToSection(saver.Position, 1, 1, 0, 1, "DIC " + node.Key); //      <------------ Entry Set
-                saver.SaveString(node.Key);
+
+                if (curNode == 0)
+                {
+                    saver.SaveRelocateEntryToSection(saver.Position, 1, 1, 0, 1, "DIC " + node.Key); //      <------------ Entry Set
+                    saver.SaveString("");
+                }
+                else
+                {
+                    saver.SaveRelocateEntryToSection(saver.Position, 1, 1, 0, 1, "DIC " + node.Key); //      <------------ Entry Set
+                    saver.SaveString(node.Key);
+                }
+                curNode++;
             }
         }
 
@@ -169,7 +181,6 @@ namespace BezelEngineArchive_Lib
 
         // ---- METHODS (PRIVATE) --------------------------------------------------------------------------------------
 
-        //Todo, I'm sure alot of these methods could be better optimized for c#
         static string ToBinaryString(string text, Encoding encoding)
         {
             return string.Join("", encoding.GetBytes(text).Select(n => Convert.ToString(n, 2).PadLeft(8, '0')));
@@ -339,6 +350,9 @@ namespace BezelEngineArchive_Lib
 
                 CurEntry++;
             }
+
+            // Remove the dummy empty key in the root again.
+            _nodes[0].Key = null;
         }
 
         private Node ReadNode(FileLoader loader)

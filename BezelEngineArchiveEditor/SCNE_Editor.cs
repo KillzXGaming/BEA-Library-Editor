@@ -10,9 +10,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using BezelEngineArchive_Lib;
-using ZstdNet;
-using SARCExt;
 using Be.Windows.Forms;
+using ZstdNet;
 
 namespace BezelEngineArchiveEditor
 {
@@ -60,14 +59,17 @@ namespace BezelEngineArchiveEditor
                 ImageKey = "fileBlank";
                 SelectedImageKey = "fileBlank";
 
-                ContextMenu = new ContextMenu();
-                MenuItem export = new MenuItem("Export");
-                ContextMenu.MenuItems.Add(export);
+                ContextMenuStrip contextMenuStrip = new ContextMenuStrip();
+
+                ToolStripMenuItem export = new ToolStripMenuItem("Export");
+                contextMenuStrip.Items.Add(export);
                 export.Click += Export;
 
-                MenuItem replace = new MenuItem("Replace");
-                ContextMenu.MenuItems.Add(replace);
+                ToolStripMenuItem replace = new ToolStripMenuItem("Replace");
+                contextMenuStrip.Items.Add(replace);
                 replace.Click += Replace;
+
+                this.ContextMenuStrip = contextMenuStrip;
             }
 
             public string FullName;
